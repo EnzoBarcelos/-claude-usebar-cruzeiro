@@ -90,6 +90,7 @@ function Get-DefaultConfig {
         iconStyle          = 'pct'
         colorTheme         = 'vermelho' # vermelho | roxo | azul | verde | laranja
         notifications      = $false     # balões de aviso (desligados por padrão)
+        soundEnabled       = $true       # toca cruzeiro-radio-globo.mp3 ao clicar "Atualizar agora"
         pinned             = $false      # popup fixado (não some ao perder o foco)
         popupWidth         = $null       # $null = tamanho automático
         popupHeight        = $null
@@ -493,6 +494,8 @@ namespace ClaudeUsebar {
         [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
         [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
         [DllImport("user32.dll", SetLastError = true)] public static extern bool DestroyIcon(IntPtr handle);
+        [DllImport("winmm.dll", CharSet = CharSet.Auto)]
+        public static extern int mciSendString(string command, System.Text.StringBuilder ret, int retLen, IntPtr hwnd);
         public static void HideConsole() {
             IntPtr h = GetConsoleWindow();
             if (h != IntPtr.Zero) ShowWindow(h, 0); // SW_HIDE
@@ -593,6 +596,27 @@ function Lighten-Color {
     $g = [int][Math]::Round($Color.G + (255 - $Color.G) * $Amount)
     $b = [int][Math]::Round($Color.B + (255 - $Color.B) * $Amount)
     [System.Drawing.Color]::FromArgb(255, $r, $g, $b)
+}
+#endregion
+
+#region UI-Sound -------------------------------------------------------------------
+# Som ao clicar "Atualizar agora". Usa MCI (winmm) que toca mp3 nativamente e de forma
+# assíncrona (não trava a UI). O arquivo fica ao lado do script (embutido no projeto).
+$script:SoundPath = $null
+if ($PSCommandPath) {
+    $script:SoundPath = Join-Path (Split-Path -Parent $PSCommandPath) 'cruzeiro-radio-globo.mp3'
+}
+
+function Play-RefreshSound {
+    if (-not $script:Config.soundEnabled) { return }
+    if (-not $script:SoundPath -or -not (Test-Path -LiteralPath $script:SoundPath)) { return }
+    try {
+        $sb = [System.Text.StringBuilder]::new(256)
+        # fecha uma reprodução anterior (se houver) e reabre do início a cada clique
+        [ClaudeUsebar.Native]::mciSendString('close refreshsnd', $null, 0, [IntPtr]::Zero) | Out-Null
+        [ClaudeUsebar.Native]::mciSendString(('open "{0}" alias refreshsnd' -f $script:SoundPath), $null, 0, [IntPtr]::Zero) | Out-Null
+        [ClaudeUsebar.Native]::mciSendString('play refreshsnd from 0', $sb, 0, [IntPtr]::Zero) | Out-Null
+    } catch { }
 }
 #endregion
 
@@ -1096,7 +1120,7 @@ if (-not (Test-Path -LiteralPath $script:AppDir)) { New-Item -ItemType Directory
 $menu = [System.Windows.Forms.ContextMenuStrip]::new()
 
 $miRefresh = [System.Windows.Forms.ToolStripMenuItem]::new('Atualizar agora')
-$miRefresh.add_Click({ Update-State -Manual }) | Out-Null
+$miRefresh.add_Click({ Play-RefreshSound; Update-State -Manual }) | Out-Null
 $menu.Items.Add($miRefresh) | Out-Null
 
 $menu.Items.Add([System.Windows.Forms.ToolStripSeparator]::new()) | Out-Null
@@ -1131,6 +1155,17 @@ foreach ($key in $colorLabels.Keys) {
     $script:MiColor.DropDownItems.Add($item) | Out-Null
 }
 $menu.Items.Add($script:MiColor) | Out-Null
+
+# Liga/desliga o som ao clicar "Atualizar agora"
+$script:MiSound = [System.Windows.Forms.ToolStripMenuItem]::new('Som ao atualizar')
+$script:MiSound.Checked = [bool]$script:Config.soundEnabled
+$script:MiSound.add_Click({
+    param($s, $e)
+    $script:Config.soundEnabled = -not [bool]$script:Config.soundEnabled
+    $s.Checked = [bool]$script:Config.soundEnabled
+    Save-Config
+}) | Out-Null
+$menu.Items.Add($script:MiSound) | Out-Null
 
 $menu.Items.Add([System.Windows.Forms.ToolStripSeparator]::new()) | Out-Null
 

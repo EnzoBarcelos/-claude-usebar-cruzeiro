@@ -69,6 +69,17 @@ Invoke-WebRequest -Uri "$RepoRawBase/claude-usebar.ps1" -OutFile $tmp -UseBasicP
 Move-Item -LiteralPath $tmp -Destination $ScriptDest -Force
 Write-Ok 'Download concluido.'
 
+# Som do "Atualizar agora" (opcional - nao impede a instalacao se falhar)
+try {
+    $sndDest = Join-Path $AppDir 'cruzeiro-radio-globo.mp3'
+    $sndTmp  = "$sndDest.download"
+    Invoke-WebRequest -Uri "$RepoRawBase/cruzeiro-radio-globo.mp3" -OutFile $sndTmp -UseBasicParsing
+    Move-Item -LiteralPath $sndTmp -Destination $sndDest -Force
+    Write-Ok 'Som de atualizacao baixado.'
+} catch {
+    Write-Note 'Nao foi possivel baixar o som (segue sem ele).'
+}
+
 # --- 3. Encerrar instancia em execucao (atualizacao) --------------------------------
 $running = Get-CimInstance Win32_Process -Filter "Name = 'pwsh.exe'" -ErrorAction SilentlyContinue |
     Where-Object { $_.CommandLine -match 'claude-usebar\.ps1' }
