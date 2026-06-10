@@ -86,8 +86,11 @@ logon). Para iniciar agora, sem reiniciar a sessão: `wscript claude-usebar-laun
 
 ### Menu (clique direito no ícone)
 
-- **Atualizar agora** — força uma consulta (respeitando o piso de rate limit).
+- **Atualizar agora** — força uma consulta (respeitando o piso de rate limit). Toca um som
+  (`cruzeiro-radio-globo.mp3`) no clique, se **Som ao atualizar** estiver ligado.
 - **Ícone: max/5h/7d** — alterna qual janela o `%` do ícone reflete.
+- **Cor** — escolhe entre 5 temas de cor.
+- **Som ao atualizar** — liga/desliga o som do "Atualizar agora" (config `soundEnabled`).
 - **Abrir página de uso** — abre `claude.ai/settings/usage`.
 - **Sobre** / **Sair**.
 
@@ -102,6 +105,7 @@ logon). Para iniciar agora, sem reiniciar a sessão: `wscript claude-usebar-laun
   "mode": "5h",                // qual % vai no ícone: "5h" (sessão, padrão) | "7d" | "max"
   "showRemaining": true,
   "iconStyle": "pct",
+  "soundEnabled": true,        // toca cruzeiro-radio-globo.mp3 ao clicar "Atualizar agora"
   "backgroundImage": null,     // caminho de imagem de fundo do popup (null = fundo sólido)
   "backgroundDarken": 0.75,    // véu escuro sobre a imagem: 0 (sem véu) a 0.95 (quase preto)
   "colors": { "low": "#7f1010", "mid": "#b71c1c", "high": "#e53935", "critical": "#ff1744" }
