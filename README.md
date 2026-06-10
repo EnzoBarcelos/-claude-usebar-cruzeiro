@@ -18,13 +18,13 @@ Bandeja:  ...  [16]  🔊 📶 🕐
                  │ (clique)
    ┌─────────────────────────────────────┐
    │ Claude · Team · Fable 5             │
-   │ Sessão (5h)                  16% →   │
-   │ ▓▓░░░░░░░░░░░░░░░░░░░  reset em 4h   │
-   │ Semana (7d)                  39% ↓   │
-   │ ▓▓▓▓▓▓▓░░░░░░░░░░░░░  reset em 2d 23h│
-   │ Sonnet (7d)                   0% →   │
-   │ ░░░░░░░░░░░░░░░░░░░░  reset em 7d    │
-   │ atualiza em 3:47                     │
+   │ Sessão (5h)                  16% →  │
+   │ ▓▓░░░░░░░░░░░░░░░░░░░  reset em 4h  │
+   │ Semana (7d)                  39% ↓  │
+   │ ▓▓▓▓▓▓▓░░░░░░░░░░░░░ reset em 2d 23h│
+   │ Sonnet (7d)                   0% →  │
+   │ ░░░░░░░░░░░░░░░░░░░░  reset em 7d   │
+   │ atualiza em 3:47                    │
    └─────────────────────────────────────┘
 ```
 
@@ -102,15 +102,15 @@ logon). Para iniciar agora, sem reiniciar a sessão: `wscript claude-usebar-laun
 
 ```jsonc
 {
-  "intervalSec": 300,          // intervalo de atualização (mínimo e padrão: 300s)
-  "pacingTolerancePct": 5,     // banda ± para o indicador "→ no ritmo"
-  "mode": "5h",                // qual % vai no ícone: "5h" (sessão, padrão) | "7d" | "max"
+  "intervalSec": 300, // intervalo de atualização (mínimo e padrão: 300s)
+  "pacingTolerancePct": 5, // banda ± para o indicador "→ no ritmo"
+  "mode": "5h", // qual % vai no ícone: "5h" (sessão, padrão) | "7d" | "max"
   "showRemaining": true,
   "iconStyle": "pct",
-  "soundEnabled": true,        // toca cruzeiro-radio-globo.mp3 ao clicar "Atualizar agora"
-  "backgroundImage": null,     // caminho de imagem de fundo do popup (null = fundo sólido)
-  "backgroundDarken": 0.75,    // véu escuro sobre a imagem: 0 (sem véu) a 0.95 (quase preto)
-  "colors": { "low": "#7f1010", "mid": "#b71c1c", "high": "#e53935", "critical": "#ff1744" }
+  "soundEnabled": true, // toca cruzeiro-radio-globo.mp3 ao clicar "Atualizar agora"
+  "backgroundImage": null, // caminho de imagem de fundo do popup (null = fundo sólido)
+  "backgroundDarken": 0.75, // véu escuro sobre a imagem: 0 (sem véu) a 0.95 (quase preto)
+  "colors": { "low": "#7f1010", "mid": "#b71c1c", "high": "#e53935", "critical": "#ff1744" },
 }
 ```
 
@@ -131,12 +131,12 @@ Severidade por uso: `low` 0–49 · `mid` 50–74 · `high` 75–89 · `critical
 
 ## Estados de erro (no ícone/tooltip)
 
-| Ícone | Situação |
-|---|---|
-| `?` cinza | Não logado — rode `claude login` |
-| `!` vermelho | Falha ao renovar o token |
-| `·` esmaecido | Rate limited — exibindo cache |
-| `-` esmaecido | Offline — exibindo cache |
+| Ícone         | Situação                                               |
+| ------------- | ------------------------------------------------------ |
+| `?` cinza     | Não logado — rode `claude login`                       |
+| `!` vermelho  | Falha ao renovar o token                               |
+| `·` esmaecido | Rate limited — exibindo cache                          |
+| `-` esmaecido | Offline — exibindo cache                               |
 | `%` esmaecido | Dado vindo do cache (não foi possível atualizar agora) |
 
 ## Limitações
