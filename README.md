@@ -13,20 +13,7 @@ vivo** até a próxima atualização do uso. O popup é **responsivo**: ao redim
 fontes, barras e espaçamentos escalam proporcionalmente. Opcionalmente, exibe uma **imagem
 de fundo** (modo cover) sob um véu escuro que preserva a legibilidade.
 
-```
-Bandeja:  ...  [16]  🔊 📶 🕐
-                 │ (clique)
-   ┌─────────────────────────────────────┐
-   │ Claude · Team · Fable 5             │
-   │ Sessão (5h)                  16% →  │
-   │ ▓▓░░░░░░░░░░░░░░░░░░░  reset em 4h  │
-   │ Semana (7d)                  39% ↓  │
-   │ ▓▓▓▓▓▓▓░░░░░░░░░░░░░ reset em 2d 23h│
-   │ Sonnet (7d)                   0% →  │
-   │ ░░░░░░░░░░░░░░░░░░░░  reset em 7d   │
-   │ atualiza em 3:47                    │
-   └─────────────────────────────────────┘
-```
+![Popup do claude-usebar aberto a partir do ícone na bandeja](docs/popup.png)
 
 ## Instalação
 
