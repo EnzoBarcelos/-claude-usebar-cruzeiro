@@ -553,11 +553,55 @@ namespace ClaudeUsebar {
 }
 #endregion
 
+#region UI-Fonts -------------------------------------------------------------------
+# Resolve as famílias de fonte uma única vez, com fallback para Windows 10.
+# - Texto do popup/ícone: Segoe UI Variable (Win11) -> Segoe UI.
+# - Glifos (pin): Segoe Fluent Icons (Win11, traço mais leve) -> Segoe MDL2 Assets.
+$script:UiFontFamily   = 'Segoe UI'
+$script:IconGlyphFamily = 'Segoe MDL2 Assets'
+$script:PopupCornerRadius = 14   # raio dos cantos arredondados (px)
+
+function Test-FontFamily {
+    param([string]$Name)
+    try { $ff = [System.Drawing.FontFamily]::new($Name); $ff.Dispose(); return $true }
+    catch { return $false }
+}
+
+function Resolve-Fonts {
+    foreach ($fam in 'Segoe UI Variable Text', 'Segoe UI Variable', 'Segoe UI') {
+        if (Test-FontFamily $fam) { $script:UiFontFamily = $fam; break }
+    }
+    foreach ($fam in 'Segoe Fluent Icons', 'Segoe MDL2 Assets') {
+        if (Test-FontFamily $fam) { $script:IconGlyphFamily = $fam; break }
+    }
+}
+
+function New-UiFont {
+    param(
+        [single]$Size,
+        [System.Drawing.FontStyle]$Style = [System.Drawing.FontStyle]::Regular,
+        [System.Drawing.GraphicsUnit]$Unit = [System.Drawing.GraphicsUnit]::Point
+    )
+    [System.Drawing.Font]::new($script:UiFontFamily, $Size, $Style, $Unit)
+}
+
+# Clareia uma cor em direção ao branco (0..1). Usado no ícone da bandeja: as cores de
+# severidade são escuras (feitas para fundo); como número solto precisam de mais luz.
+function Lighten-Color {
+    param([System.Drawing.Color]$Color, [double]$Amount = 0.35)
+    $r = [int][Math]::Round($Color.R + (255 - $Color.R) * $Amount)
+    $g = [int][Math]::Round($Color.G + (255 - $Color.G) * $Amount)
+    $b = [int][Math]::Round($Color.B + (255 - $Color.B) * $Amount)
+    [System.Drawing.Color]::FromArgb(255, $r, $g, $b)
+}
+#endregion
+
 #region UI-Icon --------------------------------------------------------------------
-# Ícone: quadrado arredondado na cor da severidade com o % da sessão como protagonista.
-# $Bg = cor de fundo (severidade), $Fg = cor do número.
+# Ícone minimalista: só o número (sem fundo), na cor da severidade já clareada para
+# legibilidade, com um halo escuro fino que mantém contraste em barras claras e escuras.
+# $Color = cor do número (severidade/estado).
 function Set-TrayIcon {
-    param([string]$Text, [System.Drawing.Color]$Bg, [System.Drawing.Color]$Fg)
+    param([string]$Text, [System.Drawing.Color]$Color)
     $sz = [System.Windows.Forms.SystemInformation]::SmallIconSize
     $w  = [Math]::Max($sz.Width, 16)
     $h  = [Math]::Max($sz.Height, 16)
@@ -568,30 +612,28 @@ function Set-TrayIcon {
         $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAlias
         $g.Clear([System.Drawing.Color]::Transparent)
 
-        # fundo arredondado
-        $pad  = [single]($w * 0.06)
-        $d    = [single]($w * 0.56)   # diâmetro do arco dos cantos
-        $rect = [System.Drawing.RectangleF]::new($pad, $pad, $w - 2 * $pad, $h - 2 * $pad)
-        $gp = [System.Drawing.Drawing2D.GraphicsPath]::new()
-        $gp.AddArc($rect.X, $rect.Y, $d, $d, 180, 90)
-        $gp.AddArc($rect.Right - $d, $rect.Y, $d, $d, 270, 90)
-        $gp.AddArc($rect.Right - $d, $rect.Bottom - $d, $d, $d, 0, 90)
-        $gp.AddArc($rect.X, $rect.Bottom - $d, $d, $d, 90, 90)
-        $gp.CloseFigure()
-        $bgBrush = [System.Drawing.SolidBrush]::new($Bg)
-        $g.FillPath($bgBrush, $gp)
-        $bgBrush.Dispose(); $gp.Dispose()
-
-        # número (sessão) — protagonista
-        $fontPx = if ($Text.Length -ge 3) { [single][Math]::Floor($h * 0.42) } else { [single][Math]::Floor($h * 0.58) }
-        $font   = [System.Drawing.Font]::new('Segoe UI', $fontPx, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
+        # número como caminho, para poder contornar (halo) e preencher
+        $fontPx = if ($Text.Length -ge 3) { [single][Math]::Floor($h * 0.66) } else { [single][Math]::Floor($h * 0.86) }
         $fmt    = [System.Drawing.StringFormat]::new()
         $fmt.Alignment     = [System.Drawing.StringAlignment]::Center
         $fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $fgBrush = [System.Drawing.SolidBrush]::new($Fg)
-        $g.DrawString($Text, $font, $fgBrush, [System.Drawing.RectangleF]::new(0, [single]($h * 0.05), $w, $h), $fmt)
-        $font.Dispose(); $fmt.Dispose(); $fgBrush.Dispose()
+        $ff   = [System.Drawing.FontFamily]::new($script:UiFontFamily)
+        $rect = [System.Drawing.RectangleF]::new(0, 0, $w, $h)
+        $gp   = [System.Drawing.Drawing2D.GraphicsPath]::new()
+        $gp.AddString($Text, $ff, [int][System.Drawing.FontStyle]::Bold, $fontPx, $rect, $fmt)
 
+        # halo escuro (contorno) -> contraste em fundos claros
+        $haloPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(170, 0, 0, 0), [single][Math]::Max(2.0, $w * 0.14))
+        $haloPen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+        $g.DrawPath($haloPen, $gp)
+        $haloPen.Dispose()
+
+        # preenchimento na cor da severidade (já clareada pelo chamador)
+        $fgBrush = [System.Drawing.SolidBrush]::new($Color)
+        $g.FillPath($fgBrush, $gp)
+        $fgBrush.Dispose()
+
+        $gp.Dispose(); $ff.Dispose(); $fmt.Dispose()
         $g.Dispose()
         $hicon = $bmp.GetHicon()
         try {
@@ -701,9 +743,10 @@ function Update-MenuText {
 function Render {
     Build-Display
     if ($script:NotifyIcon) {
-        $bg = [System.Drawing.ColorTranslator]::FromHtml($script:IconBg)
-        $fg = [System.Drawing.ColorTranslator]::FromHtml($script:IconFg)
-        Set-TrayIcon -Text $script:IconText -Bg $bg -Fg $fg
+        # $IconBg carregava a cor de severidade/estado; agora ela vira a cor do número,
+        # clareada para legibilidade como número solto (sem fundo).
+        $col = Lighten-Color ([System.Drawing.ColorTranslator]::FromHtml($script:IconBg)) 0.35
+        Set-TrayIcon -Text $script:IconText -Color $col
         $t = [string]$script:TooltipText
         if ($t.Length -gt 127) { $t = $t.Substring(0, 127) }   # NotifyIcon.Text: limite 127
         $script:NotifyIcon.Text = $t
@@ -756,12 +799,34 @@ function Set-PinButtonLayout {
     $script:PinButton.Size = [System.Drawing.Size]::new($bw, $bw)
     if ($script:PinScale -ne $k) {
         $old = $script:PinButton.Font
-        $script:PinButton.Font = [System.Drawing.Font]::new('Segoe MDL2 Assets', [single](10.0 * $k))
+        # Segoe Fluent Icons (Win11, traço mais leve) com fallback para MDL2 no Win10.
+        $script:PinButton.Font = [System.Drawing.Font]::new($script:IconGlyphFamily, [single](9.5 * $k))
         if ($old) { $old.Dispose() }
         $script:PinScale = $k
     }
-    $m = [int][Math]::Round(6 * $k)
+    # margem maior que o raio do canto, para o alfinete não ser cortado pelo arredondamento
+    $m = [int][Math]::Max([Math]::Round(6 * $k), [Math]::Ceiling($script:PopupCornerRadius * 0.8))
     $script:PinButton.Location = [System.Drawing.Point]::new([int]($script:PopupForm.ClientSize.Width - $bw - $m), $m)
+}
+
+# Aplica o recorte arredondado à janela (cantos médios). Recalculado a cada Resize.
+function Set-PopupRegion {
+    if (-not $script:PopupForm) { return }
+    $w = $script:PopupForm.Width
+    $h = $script:PopupForm.Height
+    if ($w -le 0 -or $h -le 0) { return }
+    $r = [single][Math]::Min($script:PopupCornerRadius, [Math]::Min($w, $h) / 2.0)
+    $d = [single]($r * 2)
+    $gp = [System.Drawing.Drawing2D.GraphicsPath]::new()
+    $gp.AddArc(0, 0, $d, $d, 180, 90)
+    $gp.AddArc($w - $d, 0, $d, $d, 270, 90)
+    $gp.AddArc($w - $d, $h - $d, $d, $d, 0, 90)
+    $gp.AddArc(0, $h - $d, $d, $d, 90, 90)
+    $gp.CloseFigure()
+    $old = $script:PopupForm.Region
+    $script:PopupForm.Region = [System.Drawing.Region]::new($gp)
+    $gp.Dispose()
+    if ($old) { $old.Dispose() }
 }
 
 # Bitmap de fundo cacheado; carrega via MemoryStream para não manter lock no arquivo.
@@ -832,10 +897,10 @@ function Draw-PopupContent {
     $muted = [System.Drawing.ColorTranslator]::FromHtml('#9aa0a6')
     $track = [System.Drawing.ColorTranslator]::FromHtml('#3a3a40')
 
-    $fTitle = [System.Drawing.Font]::new('Segoe UI', [single](10.5 * $k), [System.Drawing.FontStyle]::Bold)
-    $fName  = [System.Drawing.Font]::new('Segoe UI', [single](9.0 * $k))
-    $fPct   = [System.Drawing.Font]::new('Segoe UI', [single](9.0 * $k), [System.Drawing.FontStyle]::Bold)
-    $fSmall = [System.Drawing.Font]::new('Segoe UI', [single](8.0 * $k))
+    $fTitle = New-UiFont ([single](10.5 * $k)) ([System.Drawing.FontStyle]::Bold)
+    $fName  = New-UiFont ([single](9.0 * $k))
+    $fPct   = New-UiFont ([single](9.0 * $k)) ([System.Drawing.FontStyle]::Bold)
+    $fSmall = New-UiFont ([single](8.0 * $k))
     $brW    = [System.Drawing.SolidBrush]::new($white)
     $brM    = [System.Drawing.SolidBrush]::new($muted)
     try {
@@ -891,6 +956,20 @@ function Draw-PopupContent {
         if ($cd) {
             $g.DrawString($cd, $fSmall, $brM, $pad, [single]($H - 28 * $k))
         }
+
+        # Borda fina translúcida acompanhando os cantos arredondados (fio sutil + suaviza
+        # o serrilhado do recorte por Region, que não é antialiased).
+        $r  = [single]$script:PopupCornerRadius
+        $d  = [single]($r * 2)
+        $bp = [System.Drawing.Drawing2D.GraphicsPath]::new()
+        $bp.AddArc(0.5, 0.5, $d, $d, 180, 90)
+        $bp.AddArc($W - $d - 1.5, 0.5, $d, $d, 270, 90)
+        $bp.AddArc($W - $d - 1.5, $H - $d - 1.5, $d, $d, 0, 90)
+        $bp.AddArc(0.5, $H - $d - 1.5, $d, $d, 90, 90)
+        $bp.CloseFigure()
+        $borderPen = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(40, 255, 255, 255), 1.0)
+        $g.DrawPath($borderPen, $bp)
+        $borderPen.Dispose(); $bp.Dispose()
     } finally {
         $fTitle.Dispose(); $fName.Dispose(); $fPct.Dispose(); $fSmall.Dispose(); $brW.Dispose(); $brM.Dispose()
     }
@@ -913,6 +992,7 @@ function Show-Popup {
         $y  = $wa.Bottom - $script:PopupForm.Height - 8
         $script:PopupForm.Location = [System.Drawing.Point]::new([int]$x, [int]$y)
     }
+    Set-PopupRegion                  # cantos arredondados conforme o tamanho atual
     $script:PopupForm.Show()
     $script:PopupForm.Activate()
     $script:PopupForm.BringToFront()
@@ -1006,6 +1086,7 @@ $script:Mutex = [System.Threading.Mutex]::new($true, 'Global\claude-usebar', [re
 if (-not $created) { return }
 
 Initialize-WinForms
+Resolve-Fonts            # define as famílias de fonte (Variable/Fluent) com fallback p/ Win10
 if (-not $Foreground) { try { [ClaudeUsebar.Native]::HideConsole() } catch { } }
 
 Load-Config
@@ -1094,6 +1175,7 @@ $script:PopupForm.add_Deactivate({
 }) | Out-Null
 $script:PopupForm.add_Resize({
     Set-PinButtonLayout                 # alfinete acompanha o redimensionamento ao vivo
+    Set-PopupRegion                     # cantos arredondados acompanham o novo tamanho
     $script:PopupForm.Invalidate()      # conteúdo re-escala durante o arraste
 }) | Out-Null
 $script:PopupForm.add_ResizeBegin({ $script:PopupForm.Resizing = $true }) | Out-Null
@@ -1112,7 +1194,7 @@ $script:PinButton.AutoSize  = $false
 $script:PinButton.Size      = [System.Drawing.Size]::new(22, 22)
 $script:PinButton.BackColor = [System.Drawing.ColorTranslator]::FromHtml('#1f1f23')
 $script:PinButton.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
-$script:PinButton.Font      = [System.Drawing.Font]::new('Segoe MDL2 Assets', 10.0)
+$script:PinButton.Font      = [System.Drawing.Font]::new($script:IconGlyphFamily, 9.5)
 $script:PinButton.Cursor    = [System.Windows.Forms.Cursors]::Hand
 $script:PinTip = [System.Windows.Forms.ToolTip]::new()
 $script:PinButton.add_Click({

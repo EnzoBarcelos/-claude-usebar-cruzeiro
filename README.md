@@ -33,7 +33,7 @@ Bandeja:  ...  [16]  🔊 📶 🕐
 Cole este comando em qualquer janela do **PowerShell** (Win+R → `powershell` → Enter):
 
 ```powershell
-irm https://raw.githubusercontent.com/<usuario>/claude-usebar/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/EnzoBarcelos/-claude-usebar-cruzeiro/main/install.ps1 | iex
 ```
 
 O instalador faz tudo: instala o PowerShell 7 se faltar (via winget), baixa o widget para

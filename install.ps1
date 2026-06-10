@@ -1,6 +1,6 @@
 # install.ps1 - instalador de 1 comando do claude-usebar.
 #
-#   irm https://raw.githubusercontent.com/<usuario>/claude-usebar/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/EnzoBarcelos/-claude-usebar-cruzeiro/main/install.ps1 | iex
 #
 # Roda no Windows PowerShell 5.1 (nativo do Windows) ou no pwsh 7+. Faz tudo:
 #   1. Garante PowerShell 7.4+ (instala via winget se faltar);
@@ -12,7 +12,7 @@
 
 $ErrorActionPreference = 'Stop'
 
-$RepoRawBase = 'https://raw.githubusercontent.com/<usuario>/claude-usebar/main'
+$RepoRawBase = 'https://raw.githubusercontent.com/EnzoBarcelos/-claude-usebar-cruzeiro/main'
 $MinPwsh     = [version]'7.4'
 $AppDir      = Join-Path $env:LOCALAPPDATA 'claude-usebar'
 $ScriptDest  = Join-Path $AppDir 'claude-usebar.ps1'
