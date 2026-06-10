@@ -872,6 +872,49 @@ function Get-BackgroundBitmap {
     }
 }
 
+# Descarta o bitmap de fundo cacheado para forçar recarga (ex.: ao trocar a imagem,
+# mesmo que o caminho de destino seja reaproveitado).
+function Reset-BackgroundCache {
+    if ($script:BgBitmap) { try { $script:BgBitmap.Dispose() } catch { }; $script:BgBitmap = $null }
+    if ($script:BgStream) { try { $script:BgStream.Dispose() } catch { }; $script:BgStream = $null }
+    $script:BgPath = $null
+}
+
+# Repinta o popup se estiver aberto (após mudar fundo/véu).
+function Refresh-Popup {
+    if ($script:PopupForm -and $script:PopupForm.Visible) { $script:PopupForm.Invalidate() }
+}
+
+# Abre um seletor de arquivo, copia a imagem escolhida para a pasta local e a adota como fundo.
+function Set-BackgroundImage {
+    $dlg = [System.Windows.Forms.OpenFileDialog]::new()
+    $dlg.Title  = 'Escolher imagem de fundo'
+    $dlg.Filter = 'Imagens|*.jpg;*.jpeg;*.png;*.bmp;*.gif|Todos os arquivos|*.*'
+    try {
+        if ($dlg.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { return }
+        $src = $dlg.FileName
+        $ext = [System.IO.Path]::GetExtension($src)
+        if (-not $ext) { $ext = '.img' }
+        $dst = Join-Path $script:AppDir ('background' + $ext.ToLowerInvariant())
+        Copy-Item -LiteralPath $src -Destination $dst -Force
+        $script:Config.backgroundImage = $dst
+        Reset-BackgroundCache
+        Save-Config
+        Refresh-Popup
+    } catch {
+    } finally {
+        $dlg.Dispose()
+    }
+}
+
+# Remove o fundo (volta ao fundo sólido).
+function Remove-BackgroundImage {
+    $script:Config.backgroundImage = $null
+    Reset-BackgroundCache
+    Save-Config
+    Refresh-Popup
+}
+
 # Texto do rodapé: contagem regressiva até a próxima atualização do uso.
 function Get-CountdownText {
     if ($script:NextTickAt -le 0) { return $null }
@@ -1166,6 +1209,40 @@ $script:MiSound.add_Click({
     Save-Config
 }) | Out-Null
 $menu.Items.Add($script:MiSound) | Out-Null
+
+# Submenu de fundo: trocar imagem, remover e ajustar o véu escuro
+$script:MiBg = [System.Windows.Forms.ToolStripMenuItem]::new('Fundo')
+
+$miBgPick = [System.Windows.Forms.ToolStripMenuItem]::new('Trocar fundo…')
+$miBgPick.add_Click({ Set-BackgroundImage }) | Out-Null
+$script:MiBg.DropDownItems.Add($miBgPick) | Out-Null
+
+$miBgClear = [System.Windows.Forms.ToolStripMenuItem]::new('Remover fundo')
+$miBgClear.add_Click({ Remove-BackgroundImage }) | Out-Null
+$script:MiBg.DropDownItems.Add($miBgClear) | Out-Null
+
+$script:MiBg.DropDownItems.Add([System.Windows.Forms.ToolStripSeparator]::new()) | Out-Null
+
+# Submenu "Escurecer fundo" (intensidade do véu sobre a imagem)
+$miDarken = [System.Windows.Forms.ToolStripMenuItem]::new('Escurecer fundo')
+$script:DarkenItems = @{}
+$darkenLevels = [ordered]@{ 'Claro' = 0.50; 'Médio' = 0.70; 'Escuro' = 0.85 }
+foreach ($label in $darkenLevels.Keys) {
+    $it = [System.Windows.Forms.ToolStripMenuItem]::new($label)
+    $it.Tag = [double]$darkenLevels[$label]
+    $it.Checked = ([Math]::Abs([double]$script:Config.backgroundDarken - [double]$it.Tag) -lt 0.08)
+    $it.add_Click({
+        param($s, $e)
+        $script:Config.backgroundDarken = [double]$s.Tag
+        foreach ($di in $script:DarkenItems.Values) { $di.Checked = ($di -eq $s) }
+        Save-Config
+        Refresh-Popup
+    }) | Out-Null
+    $script:DarkenItems[$label] = $it
+    $miDarken.DropDownItems.Add($it) | Out-Null
+}
+$script:MiBg.DropDownItems.Add($miDarken) | Out-Null
+$menu.Items.Add($script:MiBg) | Out-Null
 
 $menu.Items.Add([System.Windows.Forms.ToolStripSeparator]::new()) | Out-Null
 
