@@ -91,6 +91,8 @@ logon). Para iniciar agora, sem reiniciar a sessão: `wscript claude-usebar-laun
 - **Ícone: max/5h/7d** — alterna qual janela o `%` do ícone reflete.
 - **Cor** — escolhe entre 5 temas de cor.
 - **Som ao atualizar** — liga/desliga o som do "Atualizar agora" (config `soundEnabled`).
+- **Fundo** — **Trocar fundo…** (escolhe uma imagem, copiada para a pasta local), **Remover
+  fundo** (volta ao sólido) e **Escurecer fundo** (Claro/Médio/Escuro — ajusta `backgroundDarken`).
 - **Abrir página de uso** — abre `claude.ai/settings/usage`.
 - **Sobre** / **Sair**.
 
