@@ -67,6 +67,9 @@ if (-not (Test-Path -LiteralPath $AppDir)) { New-Item -ItemType Directory -Path 
 $tmp = Join-Path $AppDir 'claude-usebar.ps1.download'
 Invoke-WebRequest -Uri "$RepoRawBase/claude-usebar.ps1" -OutFile $tmp -UseBasicParsing
 Move-Item -LiteralPath $tmp -Destination $ScriptDest -Force
+# Remove o "mark of the web" - sem isso, ExecutionPolicy RemoteSigned (padrao em
+# maquina nova) recusa rodar o script baixado por nao ser assinado.
+Unblock-File -Path $ScriptDest -ErrorAction SilentlyContinue
 Write-Ok 'Download concluido.'
 
 # Som do "Atualizar agora" (opcional - nao impede a instalacao se falhar)
@@ -91,7 +94,7 @@ if ($running) {
 
 # --- 4. Autostart + iniciar agora ----------------------------------------------------
 Write-Step 'Configurando inicio automatico com o Windows...'
-& $pwsh -NoProfile -File $ScriptDest -Install | Out-Null
+& $pwsh -NoProfile -ExecutionPolicy Bypass -File $ScriptDest -Install | Out-Null
 
 $vbs = Join-Path $AppDir 'claude-usebar-launcher.vbs'
 Write-Step 'Iniciando o widget...'

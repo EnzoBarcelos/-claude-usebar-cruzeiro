@@ -430,7 +430,7 @@ function Install-Autostart {
     $vbsPath    = Join-Path $projDir 'claude-usebar-launcher.vbs'
 
     # O .vbs roda o pwsh oculto desde a criação (modo 0) — sem flash de console no logon.
-    $cmd     = '"{0}" -Sta -NoProfile -WindowStyle Hidden -File "{1}"' -f $pwshPath, $scriptPath
+    $cmd     = '"{0}" -Sta -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{1}"' -f $pwshPath, $scriptPath
     $vbsCmd  = $cmd -replace '"', '""'
     $vbs = @"
 ' Gerado por claude-usebar.ps1 -Install. Inicia o widget sem janela de console.
