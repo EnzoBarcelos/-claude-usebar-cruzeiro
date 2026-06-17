@@ -637,10 +637,15 @@ function Set-TrayIcon {
         $g.Clear([System.Drawing.Color]::Transparent)
 
         # número como caminho, para poder contornar (halo) e preencher
-        $fontPx = if ($Text.Length -ge 3) { [single][Math]::Floor($h * 0.66) } else { [single][Math]::Floor($h * 0.86) }
+        $fontPx = if ($Text.Length -ge 3)     { [single][Math]::Floor($h * 0.60) }
+                  elseif ($Text.Length -eq 2) { [single][Math]::Floor($h * 0.72) }
+                  else                        { [single][Math]::Floor($h * 0.86) }
         $fmt    = [System.Drawing.StringFormat]::new()
         $fmt.Alignment     = [System.Drawing.StringAlignment]::Center
         $fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
+        # NoWrap: sem isso, "27" quebra em duas linhas no ícone 16x16 e o "7" some.
+        $fmt.FormatFlags   = [System.Drawing.StringFormatFlags]::NoWrap
+        $fmt.Trimming      = [System.Drawing.StringTrimming]::None
         $ff   = [System.Drawing.FontFamily]::new($script:UiFontFamily)
         $rect = [System.Drawing.RectangleF]::new(0, 0, $w, $h)
         $gp   = [System.Drawing.Drawing2D.GraphicsPath]::new()
@@ -1140,7 +1145,7 @@ if ($Once)      { Invoke-Once;                       return }
 # A UI exige apartment STA; pwsh é MTA por padrão. Relança em STA quando necessário.
 if ([System.Threading.Thread]::CurrentThread.GetApartmentState() -ne 'STA') {
     $pwshPath = Join-Path $PSHOME 'pwsh.exe'
-    $argLine  = '-Sta -NoProfile -File "{0}"' -f $PSCommandPath
+    $argLine  = '-Sta -NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $PSCommandPath
     if ($Foreground) { $argLine += ' -Foreground' }
     $wstyle = if ($Foreground) { 'Normal' } else { 'Hidden' }
     Start-Process -FilePath $pwshPath -ArgumentList $argLine -WindowStyle $wstyle
