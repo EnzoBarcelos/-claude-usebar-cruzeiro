@@ -1,9 +1,5 @@
 #requires -Version 7.4
 <#
-.SYNOPSIS
-  claude-usebar — widget de bandeja do Windows que mostra o consumo de uso do Claude Code.
-  Port do claudebar (Waybar/Linux, https://github.com/mryll/claudebar) para a notification area.
-
 .DESCRIPTION
   Lê as credenciais OAuth do Claude CLI (%USERPROFILE%\.claude\.credentials.json), renova o
   access token quando necessário, consulta o endpoint de uso da Anthropic e desenha o % de uso
