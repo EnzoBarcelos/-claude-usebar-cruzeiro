@@ -13,7 +13,7 @@ vivo** até a próxima atualização do uso. O popup é **responsivo**: ao redim
 fontes, barras e espaçamentos escalam proporcionalmente. Opcionalmente, exibe uma **imagem
 de fundo** (modo cover) sob um véu escuro que preserva a legibilidade.
 
-![Popup do claude-usebar aberto a partir do ícone na bandeja](docs/popup.png)
+![Popup do claude-usebar aberto a partir do ícone na bandeja](docs/Cruzeiro.png)
 
 ## Instalação
 
