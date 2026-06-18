@@ -422,7 +422,11 @@ function Invoke-Once {
 function Install-Autostart {
     $scriptPath = $PSCommandPath
     $projDir    = Split-Path -Parent $scriptPath
-    $pwshPath   = Join-Path $PSHOME 'pwsh.exe'
+    # Prefere o alias estável da Store (não muda quando o PowerShell atualiza de versão);
+    # cai para $PSHOME só se o alias não existir. O caminho versionado de $PSHOME
+    # (ex.: ...PowerShell_7.6.2.0...) quebra o launcher a cada atualização (erro 80070003).
+    $pwshAlias  = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\pwsh.exe'
+    $pwshPath   = if (Test-Path -LiteralPath $pwshAlias) { $pwshAlias } else { Join-Path $PSHOME 'pwsh.exe' }
     $vbsPath    = Join-Path $projDir 'claude-usebar-launcher.vbs'
 
     # O .vbs roda o pwsh oculto desde a criação (modo 0) — sem flash de console no logon.
