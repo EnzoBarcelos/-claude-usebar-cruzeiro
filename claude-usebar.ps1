@@ -276,8 +276,10 @@ function Write-Cache {
         $json = $obj | ConvertTo-Json -Depth 12
         $tmp  = "$($script:CachePath).tmp"
         [System.IO.File]::WriteAllText($tmp, $json, [System.Text.UTF8Encoding]::new($false))
-        if (Test-Path -LiteralPath $script:CachePath) { [System.IO.File]::Replace($tmp, $script:CachePath, $null) }
-        else { [System.IO.File]::Move($tmp, $script:CachePath) }
+        # Move com overwrite (atômico no mesmo volume). NÃO usar File::Replace(...,$null):
+        # no PowerShell o backup nulo vira string vazia e o método lança "The path is empty",
+        # deixando o cache.json eternamente desatualizado e um .tmp órfão.
+        [System.IO.File]::Move($tmp, $script:CachePath, $true)
     } catch { }
 }
 #endregion
@@ -479,6 +481,13 @@ function Uninstall-Autostart {
 function Initialize-WinForms {
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Drawing
+    # No .NET 10 (PowerShell 7.6+), System.Windows.Forms.Message é "type-forwarded" para
+    # System.Windows.Forms.Primitives.dll — que NÃO é carregado por Add-Type -AssemblyName.
+    # Sem esse assembly em $refs, o Add-Type do C# abaixo falha com CS1069 ("Message não pode
+    # ser encontrado") e a UI nem sobe. Tocar nos tipos usados pelo C# força o carregamento dos
+    # assemblies que os contêm antes de coletarmos as referências.
+    foreach ($t in @([System.Windows.Forms.Message], [System.Windows.Forms.Form],
+                     [System.Windows.Forms.CreateParams], [System.Drawing.Point])) { $null = $t }
     # Referencia todos os assemblies já carregados: Form deriva de Component
     # (System.ComponentModel.Primitives) e outros transitivos não entram no default do Add-Type.
     $refs = [AppDomain]::CurrentDomain.GetAssemblies() |
